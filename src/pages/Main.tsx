@@ -8,6 +8,138 @@ import { GoHome } from "react-icons/go";
 import { Button } from '../components/Button';
 import { modeStore } from '../stores/userStore';
 
+const displays = [
+    {
+      "imageUrl": "/1.png",
+      "name": "러키더키 석적점",
+      "address": "경북 칠곡군 석적읍 석적로 140",
+      "status": "영업중",
+      "hours": "매일 10:00-22:00",
+      "closed": "매주 수요일 휴무",
+      "phone": "054-979-3421"
+    },
+    {
+        "imageUrl": "/2.png",
+      "name": "진가재 북카페",
+      "address": "경북 칠곡군 석적읍 강변대로 1527",
+      "status": "영업중",
+      "hours": "매일 10:00-21:00",
+      "closed": "매주 월요일 휴무",
+      "phone": "054-977-5669"
+    },
+    {
+        "imageUrl": "/3.png",
+      "name": "석적문화예술회관 소공연장",
+      "address": "경북 칠곡군 석적읍 남율로 15",
+      "status": "영업중",
+      "hours": "매일 09:00-18:00",
+      "closed": null,
+      "phone": "054-979-8700"
+    },
+    {
+        "imageUrl": "/4.png",
+      "name": "아트갤러리 석적",
+      "address": "경북 칠곡군 석적읍 중리 140-2",
+      "status": "영업중",
+      "hours": "매일 10:00-17:00",
+      "closed": null,
+      "phone": "054-978-3222"
+    }
+]
+
+const music_concert = [
+    {
+        "imageUrl": "/5.png",
+      "name": "석적 지역아동센터 다목적홀",
+      "address": "경북 칠곡군 석적읍 서중리 12-4",
+      "status": "영업중",
+      "hours": "매일 09:00-17:00",
+      "phone": "054-975-1231"
+    },
+    {
+        "imageUrl": "/6.png",
+      "name": "투썸플레이스 칠곡석적유학로점",
+      "address": "경북 칠곡군 석적읍 유학로 61",
+      "status": "영업중",
+      "hours": "매일 09:00-23:00",
+      "phone": "054-977-5669"
+    },
+    {
+        "imageUrl": "/7.png",
+      "name": "카페 온유",
+      "address": "경북 칠곡군 석적읍 남율로 9길 32",
+      "status": "영업중",
+      "hours": "매일 09:00-21:00",
+      "phone": "054-971-2240"
+    },
+    {
+        "imageUrl": "/8.png",
+      "name": "석적문화회관 야외광장",
+      "address": "경북 칠곡군 석적읍 남율로 112",
+      "status": "영업중",
+      "hours": "매일 09:00-23:00",
+      "phone": "054-979-8800"
+    }
+  ]
+
+  const viewing_concert = [
+    {
+        "imageUrl": "/9.png",
+      "name": "갤러리 스페이스 석적",
+      "address": "경북 칠곡군 석적읍 북중리 214-3",
+      "status": "영업중",
+      "hours": "매일 10:00-17:00",
+      "phone": "054-978-7721"
+    },
+    {
+        "imageUrl": "/10.png",
+      "name": "브루잉하우스 카페",
+      "address": "경북 칠곡군 석적읍 강변대로 221",
+      "status": "영업중",
+      "closed": "매주 월요일 휴무",
+      "phone": "054-972-5561"
+    },
+    {
+        "imageUrl": "/11.png",
+      "name": "라운지 북카페 오늘",
+      "address": "경북 칠곡군 석적읍 중앙로 55",
+      "status": "영업중",
+      "hours": "매일 10:00-23:00",
+      "phone": "054-973-1112"
+    },
+    {
+        "imageUrl": "/12.png",
+      "name": "스테이지 루프 카페",
+      "address": "경북 칠곡군 석적읍 북중리 91-4",
+      "status": "영업중",
+      "hours": "매일 10:00-22:00",
+      "phone": "054-976-4428"
+    }
+  ]
+
+interface IList {
+    imageUrl: string,
+    name: string,
+    address: string,
+    info: string,
+    phone: string,
+}
+
+function List({imageUrl, name, address, info, phone}:IList) {
+    return (
+        <div style={{backgroundColor: '#EDEDED', width: '100%', height: 169, display: 'flex', borderRadius: 20, flexDirection: 'row', alignItems: 'center', justifyContent: 'flex-start', gap: 12, padding: 16, boxSizing: 'border-box', marginBottom: 20}}>
+            <div style={{width: 135, minWidth: 135, height: 135, flexShrink: 0, borderRadius: 10, background: `url(${imageUrl}) center top/cover no-repeat`}}></div>
+            <div style={{flex: 1, minWidth: 0, display: 'flex', flexDirection: 'column', justifyContent: 'center'}}>
+                <span style={{fontSize: 15, fontWeight: 600, marginBottom: 20}}>{name}</span>
+                <span style={{fontSize: 12, fontWeight: 500, color: '#656565'}}>{address}</span>
+                <span style={{fontSize: 12, fontWeight: 500, color: '#656565'}}>{info}</span>
+                <span style={{fontSize: 12, fontWeight: 500, color: '#656565'}}>{phone}</span>
+            </div>
+        </div>
+    )
+}
+
+
 
 function Modal() {
     const theme = useTheme();
@@ -37,21 +169,63 @@ function Modal() {
     )
 }
 
-function ViewerMode() {
+function ViewerMode({ map }) {
+    const [category, setCategory] = useState('');
+    const markersRef = useRef([]);
+
+    const onClick = (new_c) => {
+        setCategory(new_c);
+
+        if (!map || !window.kakao?.maps?.services) return;
+
+        const geocoder = new window.kakao.maps.services.Geocoder();
+
+        // 1️⃣ 기존 마커 제거
+        markersRef.current.forEach(m => m.setMap(null));
+        markersRef.current = [];
+
+        switch (new_c) {
+            case "display":
+                displays.forEach((display) => {
+                    geocoder.addressSearch(display.address, (res, status) => {
+                        if (status === window.kakao.maps.services.Status.OK) {
+
+                            const coords = new window.kakao.maps.LatLng(
+                                res[0].y,
+                                res[0].x
+                            );
+
+                            const marker = new window.kakao.maps.Marker({
+                                map,
+                                position: coords,
+                            });
+
+                            markersRef.current.push(marker);
+
+                            map.setCenter(coords);
+                        }
+                    });
+                });
+                break;
+        }
+    };
+    
+
+
     return (
         <div style={{width: '100%', height: '100%', zIndex: 2, position: 'relative'}}>
-            <div style={{position: 'absolute', top: 20}}>
-                <div style={{width: 100, height: 34, borderRadius: 15, border: '1px solid rgba(0, 0, 0, 0.25)'}}>전시</div>
-                <div style={{width: 100, height: 34, borderRadius: 15, border: '1px solid rgba(0, 0, 0, 0.25)'}}>음악 공연</div>
-                <div style={{width: 100, height: 34, borderRadius: 15, border: '1px solid rgba(0, 0, 0, 0.25)'}}>관람 공연</div>
+            <div style={{position: 'absolute', top: 20, display: 'flex', flexDirection: 'row', justifyContent: 'space-evenly', width: '100%'}}>
+                <div style={{width: 100, height: 34, borderRadius: 15, border: '1px solid rgba(0, 0, 0, 0.25)', textAlign: 'center', backgroundColor: category == 'display' ? '#A78BFA' : '#fff', paddingTop: 5, boxSizing: 'border-box'}} onClick={() => onClick('display')}>전시</div>
+                <div style={{width: 100, height: 34, borderRadius: 15, border: '1px solid rgba(0, 0, 0, 0.25)', textAlign: 'center', backgroundColor: category == 'music_concert' ? '#A78BFA' : '#fff', paddingTop: 5, boxSizing: 'border-box'}} onClick={() => onClick('music_concert')}>음악 공연</div>
+                <div style={{width: 100, height: 34, borderRadius: 15, border: '1px solid rgba(0, 0, 0, 0.25)', textAlign: 'center', backgroundColor: category == 'viewing_concert' ? '#A78BFA' : '#fff', paddingTop: 5, boxSizing: 'border-box'}} onClick={() => onClick('viewing_concert')}>관람 공연</div>
             </div>
-            <div style={{padding: 15, width: '100%', minHeight: 230, position: 'absolute', bottom: 230, backgroundColor: '#fff'}}>
-                <div style={{backgroundColor: '#EDEDED', width: '100%', height: 169}}>
-                    <span style={{fontSize: 15, fontWeight: 600}}>투썸플레이스 칠곡석적유학로점</span>
-                    <span style={{fontSize: 12, fontWeight: 500, color: '#656565'}}>경북 칠곡군 석적읍 유학로 61</span>
-                    <span style={{fontSize: 12, fontWeight: 500, color: '#656565'}}>영업중ㅣ매일 09:00-23:00</span>
-                    <span style={{fontSize: 12, fontWeight: 500, color: '#656565'}}>054-977-5669</span>
-                </div>
+            <div style={{padding: 15, width: '100%', height: 230, maxHeight: '45vh', overflowY: 'auto', WebkitOverflowScrolling: 'touch', position: 'absolute', left: 0, right: 0, bottom: 0, backgroundColor: '#fff', boxSizing: 'border-box', borderRadius: '20px 20px 0 0', display: 'flex', justifyContent: 'flex-start', alignItems: 'stretch', flexDirection: 'column'}}>
+                {
+                    category == "display" ? displays.map((display, idx) => <List imageUrl={display["imageUrl"]} name={display["name"]} address={display["address"]} info={display["info"]} phone={display["phone"]} key={idx}/>)
+                    : category == "music_concert" ? music_concert.map((display, idx) => <List imageUrl={display["imageUrl"]} name={display["name"]} address={display["address"]} info={display["info"]} phone={display["phone"]} key={idx}/>)
+                    : category == "viewing_concert" ? viewing_concert.map((display, idx) => <List imageUrl={display["imageUrl"]} name={display["name"]} address={display["address"]} info={display["info"]} phone={display["phone"]} key={idx}/>)
+                    : null
+                }
             </div>
         </div>
     )
@@ -61,6 +235,7 @@ function Main() {
     const mapRef = useRef(null);
     const selected = modeStore((state) => state.selected);
     const mode = modeStore((state) => state.mode);
+    const mapInstance = useRef(null); 
 
     useEffect(() => {
         const container = mapRef.current;
@@ -68,7 +243,7 @@ function Main() {
             center: new window.kakao.maps.LatLng(33.450701, 126.570667),
             level: 3,
          };
-        new window.kakao.maps.Map(container, options);
+        mapInstance.current = new window.kakao.maps.Map(container, options);
 
     }, [])
 
@@ -81,8 +256,15 @@ function Main() {
         <div style={{display: 'flex', flexDirection: 'column', width: '100%', height: '100vh', minHeight: 0}}>
             <Header text="문화 정류장"/>
             <div style={{width: '100%', flex: 1, overflow: 'hidden', minHeight: 0, position: 'relative'}}>
-                <div ref={mapRef} style={{width: '100%', height: '100%'}} />
-                {selected? <div style={{width: '100%', height: '100%', zIndex: 2}}><ViewerMode /></div> :<Modal />}
+                <div ref={mapRef} style={{width: '100%', height: '100%'}} id='map'/>
+                {selected
+                  ? (
+                    <div style={{position: 'absolute', inset: 0, zIndex: 2}}>
+                      <ViewerMode  map={mapInstance.current} />
+                    </div>
+                  )
+                  : <Modal />
+                }
             </div>
             <Menu />
         </div>
