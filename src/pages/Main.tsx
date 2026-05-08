@@ -199,7 +199,11 @@ function ViewerMode({ map }: { map: any }) {
         setSelectedPlace(null);
 
         // 🔥 안전 체크
-        if (!map || !window.kakao?.maps?.services) return;
+        if (!map) return;
+        if (!window.kakao?.maps?.services) {
+            console.warn('[kakao] services library not loaded. Add "&libraries=services" to the sdk.js script URL.');
+            return;
+        }
 
         const geocoder = new window.kakao.maps.services.Geocoder();
 
