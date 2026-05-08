@@ -168,7 +168,7 @@ function ViewerMode({ map, stations }: { map: any, stations: IList[] }) {
 
         const bounds = new window.kakao.maps.LatLngBounds();
 
-        filteredItems.forEach((item) => {
+        filteredItems.forEach(async (item) => {
             const coords = new window.kakao.maps.LatLng(item.latitude, item.longitude);
             
             const redMarkerHtml = `
