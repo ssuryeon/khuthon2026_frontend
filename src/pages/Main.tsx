@@ -10,6 +10,7 @@ import { modeStore } from '../stores/userStore';
 import { userStore } from '../stores/userStore';
 import {getStation} from '../utils/station';
 import { useNavigate } from 'react-router';
+import { getCount } from '../utils/station';
 
 type StationApi = {
     id: number;
@@ -170,7 +171,7 @@ function ViewerMode({ map, stations }: { map: any, stations: IList[] }) {
 
             const bounds = new window.kakao.maps.LatLngBounds();
 
-            items.forEach((item) => {
+            items.forEach(async (item) => {
                 const coords = new window.kakao.maps.LatLng(item.latitude, item.longitude);
                 const marker = new window.kakao.maps.Marker({
                     map,
@@ -180,10 +181,13 @@ function ViewerMode({ map, stations }: { map: any, stations: IList[] }) {
                 bounds.extend(coords);
 
                 const placeId = placeIdOf(item);
-                const count = demandByPlaceId[placeId] ?? 0;
+                console.log(item.supported_genres);
+                const genre = category == 'display'? '전시' : category == 'viewing_concert' ? '관람' : '음악';
+                const count = await getCount(item.id, genre);
+                // const count = demandByPlaceId[placeId] ?? 0;
                 const overlay = new window.kakao.maps.CustomOverlay({
                     position: coords,
-                    content: overlayHtml(count),
+                    content: overlayHtml(count.count),
                     yAnchor: 1.8,
                     zIndex: 10,
                 });
