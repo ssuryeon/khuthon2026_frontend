@@ -66,7 +66,7 @@ const IllustrationPlaceholder = styled.div`
   max-width: 300px;
   height: 190px;
   border-radius: 18px;
-  background: linear-gradient(180deg, #ffffff 0%, #f5f7ff 55%, #ffffff 100%);
+  background: url('/onboarding_image.png') center center/cover no-repeat;
   display: flex;
   align-items: center;
   justify-content: center;
@@ -310,7 +310,7 @@ function SignUp() {
 
       <Content>
         <Hero>
-          <IllustrationPlaceholder>Illustration</IllustrationPlaceholder>
+          <IllustrationPlaceholder></IllustrationPlaceholder>
         </Hero>
 
         <Headline>
