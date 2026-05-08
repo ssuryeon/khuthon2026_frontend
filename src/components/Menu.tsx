@@ -3,6 +3,7 @@ import { FaRegBell } from "react-icons/fa";
 import { LuMapPinned } from "react-icons/lu";
 import { FaClockRotateLeft } from "react-icons/fa6";
 import { BsPerson } from "react-icons/bs";
+import { useNavigate } from 'react-router';
 
 const Container = styled.div`
     width: 100%;
@@ -14,14 +15,16 @@ const Container = styled.div`
 `;
 
 function Menu() {
+    const navigate = useNavigate();
+
     return (
         <Container>
             <div style={{display: 'flex', flexDirection: 'column', justifyContent: 'center', alignItems: 'center', width: '20%', cursor: 'pointer'}}>
                 <LuMapPinned size={27}/>
                 <span style={{fontWeight: 500, fontSize: 12, marginTop: 2}}>지도</span>
             </div>
-            <div style={{display: 'flex', flexDirection: 'column', justifyContent: 'center', alignItems: 'center', width: '20%', cursor: 'pointer'}}>
-                <FaClockRotateLeft size={27}/>
+            <div style={{display: 'flex', flexDirection: 'column', justifyContent: 'center', alignItems: 'center', width: '20%', cursor: 'pointer'}} onClick={() => navigate('/activity')}>
+                <FaClockRotateLeft size={27} />
                 <span style={{fontWeight: 500, fontSize: 12, marginTop: 2}}>내 활동</span>
             </div>
             <div style={{display: 'flex', flexDirection: 'column', justifyContent: 'center', alignItems: 'center', width: '20%', cursor: 'pointer'}}>

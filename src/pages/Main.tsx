@@ -121,13 +121,33 @@ interface IList {
     imageUrl: string,
     name: string,
     address: string,
-    info: string,
+    info?: string,
+    hours?: string,
+    closed?: string,
     phone: string,
+    status?: string,
 }
 
-function List({imageUrl, name, address, info, phone}:IList) {
+function List({imageUrl, name, address, info, phone, onClick}:{onClick?: () => void} & IList) {
     return (
-        <div style={{backgroundColor: '#EDEDED', width: '100%', height: 169, display: 'flex', borderRadius: 20, flexDirection: 'row', alignItems: 'center', justifyContent: 'flex-start', gap: 12, padding: 16, boxSizing: 'border-box', marginBottom: 20}}>
+        <div
+          onClick={onClick}
+          style={{
+            backgroundColor: '#EDEDED',
+            width: '100%',
+            maxWidth: 360,
+            height: 169,
+            display: 'flex',
+            borderRadius: 20,
+            flexDirection: 'row',
+            alignItems: 'center',
+            justifyContent: 'flex-start',
+            gap: 12,
+            padding: 16,
+            boxSizing: 'border-box',
+            cursor: onClick ? 'pointer' : 'default'
+          }}
+        >
             <div style={{width: 135, minWidth: 135, height: 135, flexShrink: 0, borderRadius: 10, background: `url(${imageUrl}) center top/cover no-repeat`}}></div>
             <div style={{flex: 1, minWidth: 0, display: 'flex', flexDirection: 'column', justifyContent: 'center'}}>
                 <span style={{fontSize: 15, fontWeight: 600, marginBottom: 20}}>{name}</span>
@@ -171,71 +191,249 @@ function Modal() {
 
 function ViewerMode({ map }) {
     const [category, setCategory] = useState('');
+    const [selectedPlace, setSelectedPlace] = useState<IList | null>(null);
     const markersRef = useRef([]);
 
     const onClick = (new_c) => {
         setCategory(new_c);
+        setSelectedPlace(null);
 
+        // 🔥 안전 체크
         if (!map || !window.kakao?.maps?.services) return;
 
         const geocoder = new window.kakao.maps.services.Geocoder();
 
-        // 1️⃣ 기존 마커 제거
+        // 🔥 기존 마커 제거
         markersRef.current.forEach(m => m.setMap(null));
         markersRef.current = [];
 
+        const addMarkersAndFitBounds = (items: IList[]) => {
+            if (items.length === 0) return;
+
+            const bounds = new window.kakao.maps.LatLngBounds();
+            let pending = items.length;
+            let okCount = 0;
+
+            items.forEach((item) => {
+                geocoder.addressSearch(item.address, (res, status) => {
+                    if (status === window.kakao.maps.services.Status.OK) {
+                        const coords = new window.kakao.maps.LatLng(res[0].y, res[0].x);
+                        const marker = new window.kakao.maps.Marker({
+                            map,
+                            position: coords,
+                        });
+                        markersRef.current.push(marker);
+                        bounds.extend(coords);
+                        okCount += 1;
+                    }
+
+                    pending -= 1;
+                    if (pending === 0 && okCount > 0) {
+                        map.setBounds(bounds);
+                    }
+                });
+            });
+        };
+
         switch (new_c) {
             case "display":
-                displays.forEach((display) => {
-                    geocoder.addressSearch(display.address, (res, status) => {
-                        if (status === window.kakao.maps.services.Status.OK) {
-
-                            const coords = new window.kakao.maps.LatLng(
-                                res[0].y,
-                                res[0].x
-                            );
-
-                            const marker = new window.kakao.maps.Marker({
-                                map,
-                                position: coords,
-                            });
-
-                            markersRef.current.push(marker);
-
-                            map.setCenter(coords);
-                        }
-                    });
-                });
+                addMarkersAndFitBounds(displays);
+                break;
+            case "music_concert":
+                addMarkersAndFitBounds(music_concert);
+                break;
+            case "viewing_concert":
+                addMarkersAndFitBounds(viewing_concert);
+                break;
+            default:
                 break;
         }
     };
-    
-
 
     return (
-        <div style={{width: '100%', height: '100%', zIndex: 2, position: 'relative'}}>
-            <div style={{position: 'absolute', top: 20, display: 'flex', flexDirection: 'row', justifyContent: 'space-evenly', width: '100%'}}>
-                <div style={{width: 100, height: 34, borderRadius: 15, border: '1px solid rgba(0, 0, 0, 0.25)', textAlign: 'center', backgroundColor: category == 'display' ? '#A78BFA' : '#fff', paddingTop: 5, boxSizing: 'border-box'}} onClick={() => onClick('display')}>전시</div>
-                <div style={{width: 100, height: 34, borderRadius: 15, border: '1px solid rgba(0, 0, 0, 0.25)', textAlign: 'center', backgroundColor: category == 'music_concert' ? '#A78BFA' : '#fff', paddingTop: 5, boxSizing: 'border-box'}} onClick={() => onClick('music_concert')}>음악 공연</div>
-                <div style={{width: 100, height: 34, borderRadius: 15, border: '1px solid rgba(0, 0, 0, 0.25)', textAlign: 'center', backgroundColor: category == 'viewing_concert' ? '#A78BFA' : '#fff', paddingTop: 5, boxSizing: 'border-box'}} onClick={() => onClick('viewing_concert')}>관람 공연</div>
+        <div style={{ width: '100%', height: '100%', position: 'relative', pointerEvents: 'none' }}>
+            
+            {/* 버튼 영역 */}
+            <div style={{
+                position: 'absolute',
+                top: 20,
+                width: '100%',
+                display: 'flex',
+                padding: '0 16px',
+                boxSizing: 'border-box',
+                gap: 10,
+                justifyContent: 'space-between',
+                zIndex: 3,
+                pointerEvents: 'auto'
+            }}>
+                <div onClick={() => onClick('display')}
+                    style={{
+                        flex: 1,
+                        height: 34,
+                        borderRadius: 15,
+                        border: '1px solid rgba(0, 0, 0, 0.25)',
+                        textAlign: 'center',
+                        background: category === 'display' ? '#A78BFA' : '#fff',
+                        display: 'flex',
+                        alignItems: 'center',
+                        justifyContent: 'center',
+                        fontWeight: 700,
+                        fontSize: 13,
+                        boxSizing: 'border-box'
+                    }}>
+                    전시
+                </div>
+
+                <div onClick={() => onClick('music_concert')}
+                    style={{
+                        flex: 1,
+                        height: 34,
+                        borderRadius: 15,
+                        border: '1px solid rgba(0, 0, 0, 0.25)',
+                        textAlign: 'center',
+                        background: category === 'music_concert' ? '#A78BFA' : '#fff',
+                        display: 'flex',
+                        alignItems: 'center',
+                        justifyContent: 'center',
+                        fontWeight: 700,
+                        fontSize: 13,
+                        boxSizing: 'border-box'
+                    }}>
+                    음악 공연
+                </div>
+
+                <div onClick={() => onClick('viewing_concert')}
+                    style={{
+                        flex: 1,
+                        height: 34,
+                        borderRadius: 15,
+                        border: '1px solid rgba(0, 0, 0, 0.25)',
+                        textAlign: 'center',
+                        background: category === 'viewing_concert' ? '#A78BFA' : '#fff',
+                        display: 'flex',
+                        alignItems: 'center',
+                        justifyContent: 'center',
+                        fontWeight: 700,
+                        fontSize: 13,
+                        boxSizing: 'border-box'
+                    }}>
+                    관람 공연
+                </div>
             </div>
-            <div style={{padding: 15, width: '100%', height: 230, maxHeight: '45vh', overflowY: 'auto', WebkitOverflowScrolling: 'touch', position: 'absolute', left: 0, right: 0, bottom: 0, backgroundColor: '#fff', boxSizing: 'border-box', borderRadius: '20px 20px 0 0', display: 'flex', justifyContent: 'flex-start', alignItems: 'stretch', flexDirection: 'column'}}>
-                {
-                    category == "display" ? displays.map((display, idx) => <List imageUrl={display["imageUrl"]} name={display["name"]} address={display["address"]} info={display["info"]} phone={display["phone"]} key={idx}/>)
-                    : category == "music_concert" ? music_concert.map((display, idx) => <List imageUrl={display["imageUrl"]} name={display["name"]} address={display["address"]} info={display["info"]} phone={display["phone"]} key={idx}/>)
-                    : category == "viewing_concert" ? viewing_concert.map((display, idx) => <List imageUrl={display["imageUrl"]} name={display["name"]} address={display["address"]} info={display["info"]} phone={display["phone"]} key={idx}/>)
-                    : null
-                }
+
+            {/* 리스트 영역 */}
+            <div style={{
+                padding: 15,
+                position: 'absolute',
+                bottom: -28,
+                width: '100%',
+                maxHeight: 215,
+                overflowY: 'auto',
+                background: '#fff',
+                borderRadius: '20px 20px 0 0',
+                zIndex: 3,
+                display: 'flex',
+                flexDirection: 'column',
+                alignItems: selectedPlace ? 'stretch' : 'center',
+                boxSizing: 'border-box',
+                gap: 12,
+                pointerEvents: 'auto'
+            }}>
+                {selectedPlace ? (
+                  <div style={{width: '100%', display: 'flex', flexDirection: 'column', gap: 12}}>
+                    <div style={{display: 'flex', alignItems: 'center', justifyContent: 'space-between'}}>
+                      <div style={{display: 'flex', alignItems: 'center', gap: 10}}>
+                        <button
+                          type="button"
+                          onClick={() => setSelectedPlace(null)}
+                          style={{width: 36, height: 36, border: 'none', background: 'transparent', fontSize: 20, cursor: 'pointer'}}
+                          aria-label="back"
+                        >
+                          ‹
+                        </button>
+                        <span style={{fontSize: 16, fontWeight: 800}}>장소 정보</span>
+                      </div>
+                      <button
+                        type="button"
+                        style={{width: 36, height: 36, border: 'none', background: 'transparent', fontSize: 18, cursor: 'pointer'}}
+                        aria-label="favorite"
+                      >
+                        ♡
+                      </button>
+                    </div>
+
+                    <div style={{width: '100%', height: 180, borderRadius: 16, background: `url(${selectedPlace.imageUrl}) center center/cover no-repeat`, position: 'relative', overflow: 'hidden'}}>
+                      <div style={{position: 'absolute', right: 10, bottom: 10, padding: '4px 8px', borderRadius: 999, fontSize: 12, fontWeight: 700, background: 'rgba(0,0,0,0.45)', color: '#fff'}}>
+                        1/6
+                      </div>
+                    </div>
+
+                    <div style={{padding: '6px 4px 0', display: 'flex', flexDirection: 'column', gap: 8}}>
+                      <div style={{fontSize: 16, fontWeight: 900}}>{selectedPlace.name}</div>
+                      <div style={{display: 'flex', alignItems: 'center', gap: 6, fontSize: 12, color: 'rgba(31,36,48,0.6)', fontWeight: 700}}>
+                        <span style={{color: '#F5B301'}}>★</span>
+                        <span>4.6 (128)</span>
+                      </div>
+
+                      <div style={{display: 'flex', flexDirection: 'column', gap: 6, fontSize: 12, color: 'rgba(31,36,48,0.65)', fontWeight: 700}}>
+                        <div>📍 {selectedPlace.address}</div>
+                        {selectedPlace.hours ? <div>⏰ {selectedPlace.hours}{selectedPlace.status ? ` (${selectedPlace.status})` : ''}</div> : null}
+                        {selectedPlace.closed ? <div>🚫 {selectedPlace.closed}</div> : null}
+                        <div>☎ {selectedPlace.phone}</div>
+                      </div>
+
+                      <div style={{marginTop: 6, background: 'rgba(108, 92, 231, 0.08)', border: '1px solid rgba(108, 92, 231, 0.16)', borderRadius: 14, padding: 12, fontSize: 12, fontWeight: 700, color: 'rgba(31,36,48,0.7)'}}>
+                        안내사항
+                        <div style={{marginTop: 8, fontSize: 11, fontWeight: 600, color: 'rgba(31,36,48,0.55)', lineHeight: 1.35}}>
+                          - 공연 관람 이용 수칙을 꼭 확인해요.<br />
+                          - 상황에 따라 일정과 콘텐츠가 변동됩니다.<br />
+                          - 관람 및 안전 수칙을 꼭 부탁드려요.
+                        </div>
+                      </div>
+                    </div>
+
+                    <button
+                      type="button"
+                      style={{
+                        height: 52,
+                        borderRadius: 16,
+                        border: 'none',
+                        background: '#6C5CE7',
+                        color: '#fff',
+                        fontSize: 15,
+                        fontWeight: 900,
+                        cursor: 'pointer',
+                        marginTop: 4
+                      }}
+                    >
+                      수요 신청하기
+                    </button>
+                  </div>
+                ) : (
+                  (category === "display"
+                    ? displays.map((d, i) => (
+                        <List key={i} {...d} onClick={() => setSelectedPlace(d)} />
+                    ))
+                    : category === "music_concert"
+                        ? music_concert.map((d, i) => (
+                            <List key={i} {...d} onClick={() => setSelectedPlace(d)} />
+                        ))
+                        : category === "viewing_concert"
+                            ? viewing_concert.map((d, i) => (
+                                <List key={i} {...d} onClick={() => setSelectedPlace(d)} />
+                            ))
+                            : null)
+                )}
             </div>
         </div>
-    )
+    );
 }
 
 function Main() {
     const mapRef = useRef(null);
     const selected = modeStore((state) => state.selected);
     const mode = modeStore((state) => state.mode);
-    const mapInstance = useRef(null); 
+    const [map, setMap] = useState(null);
 
     useEffect(() => {
         const container = mapRef.current;
@@ -243,7 +441,8 @@ function Main() {
             center: new window.kakao.maps.LatLng(33.450701, 126.570667),
             level: 3,
          };
-        mapInstance.current = new window.kakao.maps.Map(container, options);
+        const created = new window.kakao.maps.Map(container, options);
+        setMap(created);
 
     }, [])
 
@@ -259,8 +458,8 @@ function Main() {
                 <div ref={mapRef} style={{width: '100%', height: '100%'}} id='map'/>
                 {selected
                   ? (
-                    <div style={{position: 'absolute', inset: 0, zIndex: 2}}>
-                      <ViewerMode  map={mapInstance.current} />
+                    <div style={{position: 'absolute', inset: 0, zIndex: 2, pointerEvents: 'none'}}>
+                      <ViewerMode map={map} />
                     </div>
                   )
                   : <Modal />

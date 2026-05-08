@@ -3,6 +3,7 @@ import styled from 'styled-components';
 import Menu from '../../components/Menu';
 import type { AlarmItem } from './data';
 import { mockAlarms } from './data';
+import { useNavigate } from 'react-router';
 
 const Page = styled.div`
   height: 100%;
@@ -218,6 +219,7 @@ function iconLetter(icon: AlarmItem['icon']) {
 
 function Alarm() {
   const [tab, setTab] = useState<'all' | 'read'>('all');
+  const navigate = useNavigate();
 
   const items = useMemo(() => {
     if (tab === 'read') return mockAlarms.filter((a) => !a.unread);
@@ -227,7 +229,7 @@ function Alarm() {
   return (
     <Page>
       <TopBar>
-        <TopIconButton type="button" aria-label="back">
+        <TopIconButton type="button" aria-label="back" onClick={() => navigate(-1)}>
           ‹
         </TopIconButton>
         <TopTitle>알림</TopTitle>

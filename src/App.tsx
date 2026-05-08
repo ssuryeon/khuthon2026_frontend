@@ -5,6 +5,7 @@ import Splash from './pages/Splash';
 import Login from './pages/Login';
 import SignUp from './pages/SignUp';
 import Alarm from './pages/Alarm';
+import Activity from './pages/Activity';
 
 const router = createBrowserRouter([
   {
@@ -26,6 +27,10 @@ const router = createBrowserRouter([
   {
     path: '/alarm',
     Component: Alarm,
+  },
+  {
+    path: '/activity',
+    Component: Activity,
   }
 ])
 
