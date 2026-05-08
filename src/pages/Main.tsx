@@ -57,12 +57,10 @@ const matchesCategory = (genre: string, category: string) => {
     return true;
 }
 
-const getMarkerColor = (genres: string) => {
-    const g = (genres || '').toLowerCase();
-    if (g.includes('전시')) return '#EA4335'; // Red
-    if (g.includes('음악')) return '#4285F4'; // Blue
-    if (g.includes('관람')) return '#FBBC05'; // Yellow
-    return '#34A853'; // Green
+const getMarkerColor = (count: number) => {
+    if (count <= 10) return '#4285F4'; // Blue
+    if (count < 30) return '#FBBC05'; // Yellow
+    return '#EA4335'; // Red
 }
 
 function List({ imageUrl, name, address, info, phone, onClick }: { onClick?: () => void } & IList) {
@@ -141,6 +139,7 @@ function ViewerMode({ map, stations }: { map: any, stations: IList[] }) {
         }
         return null;
     });
+    const [filteredItems, setFilteredItems] = useState<IList[]>([]);
     const [showSuccessModal, setShowSuccessModal] = useState(false);
     const markersRef = useRef<any[]>([]);
     const overlaysRef = useRef<Record<string, any>>({});
@@ -170,6 +169,50 @@ function ViewerMode({ map, stations }: { map: any, stations: IList[] }) {
     `;
 
     useEffect(() => {
+        let isCancelled = false;
+        
+        const fetchCategoryData = async () => {
+            let genreStr = '';
+            if (category === 'display') genreStr = '전시';
+            else if (category === 'music_concert') genreStr = '음악';
+            else if (category === 'viewing_concert') genreStr = '관람';
+
+            try {
+                const res = await getStation(genreStr);
+                const rows: StationApi[] = Array.isArray(res) ? res : (Array.isArray(res?.data) ? res.data : []);
+                
+                const normalized = rows.map((s) => ({
+                    id: s.id,
+                    latitude: s.latitude,
+                    longitude: s.longitude,
+                    imageUrl: `/${(s.id % 12) + 1}.png`,
+                    name: `정류장 #${s.id}`,
+                    address: s.address,
+                    supported_genres: s.supported_genres,
+                    capacity: s.capacity,
+                    hourly_cost: s.hourly_cost,
+                    is_active: s.is_active,
+                    current_count: s.current_count,
+                }));
+                if (!isCancelled) {
+                    setFilteredItems(normalized);
+                }
+            } catch (e) {
+                console.error('Failed to fetch genre data:', e);
+                if (!isCancelled) {
+                    setFilteredItems(stations.filter((s) => s.is_active && matchesCategory(s.supported_genres, category)));
+                }
+            }
+        };
+
+        fetchCategoryData();
+
+        return () => {
+            isCancelled = true;
+        };
+    }, [category, stations]);
+
+    useEffect(() => {
         if (!map) return;
         if (!window.kakao?.maps) {
             console.warn('[kakao] maps sdk not loaded.');
@@ -181,8 +224,6 @@ function ViewerMode({ map, stations }: { map: any, stations: IList[] }) {
         Object.values(overlaysRef.current).forEach((ov: any) => ov.setMap(null));
         overlaysRef.current = {};
 
-        const filteredItems = stations.filter((s) => s.is_active && matchesCategory(s.supported_genres, category));
-
         if (filteredItems.length === 0) return;
 
         const bounds = new window.kakao.maps.LatLngBounds();
@@ -190,9 +231,20 @@ function ViewerMode({ map, stations }: { map: any, stations: IList[] }) {
         filteredItems.forEach(async (item) => {
             const coords = new window.kakao.maps.LatLng(item.latitude, item.longitude);
             
-            const pinColor = getMarkerColor(item.supported_genres);
+            const confirmedStationId = sessionStorage.getItem('confirmed-station-id');
+            const isConfirmed = confirmedStationId && item.id.toString() === confirmedStationId;
+
+            const pinColor = getMarkerColor(item.current_count ?? 0);
             const contentNode = document.createElement('div');
+            contentNode.style.position = 'relative';
+
+            const glowHtml = isConfirmed ? `
+              <div style="position: absolute; top: -14px; left: -14px; width: 72px; height: 72px; border-radius: 50%; background: ${pinColor}; filter: blur(12px); opacity: 0.5; z-index: -2; pointer-events: none;"></div>
+              <div style="position: absolute; top: -6px; left: -6px; width: 56px; height: 56px; border-radius: 50%; background: white; filter: blur(8px); opacity: 0.9; z-index: -1; pointer-events: none;"></div>
+            ` : '';
+
             contentNode.innerHTML = `
+              ${glowHtml}
               <div style="
                 width: 44px;
                 height: 44px;
@@ -205,6 +257,8 @@ function ViewerMode({ map, stations }: { map: any, stations: IList[] }) {
                 box-shadow: 2px 2px 6px rgba(0,0,0,0.3);
                 border: 2px solid white;
                 cursor: pointer;
+                position: relative;
+                z-index: 1;
               ">
                 <div style="transform: rotate(45deg); color: white; font-weight: bold; font-size: 16px;">
                   ${item.current_count ?? 0}
@@ -242,7 +296,7 @@ function ViewerMode({ map, stations }: { map: any, stations: IList[] }) {
             });
 
         map.setBounds(bounds);
-    }, [map, stations, category, demandByPlaceId]);
+    }, [map, filteredItems, demandByPlaceId]);
 
     const onClick = (new_c: string) => {
         setCategory(new_c);
@@ -480,8 +534,7 @@ function ViewerMode({ map, stations }: { map: any, stations: IList[] }) {
                         )}
                     </div>
                 ) : (
-                    stations
-                        .filter((s) => s.is_active && matchesCategory(s.supported_genres, category))
+                    filteredItems
                         .map((d) => (
                             <List
                                 key={d.id}
@@ -551,7 +604,7 @@ function Main() {
                 id: s.id,
                 latitude: s.latitude,
                 longitude: s.longitude,
-                imageUrl: '/6.png',
+                imageUrl: `/${(s.id % 12) + 1}.png`,
                 name: `정류장 #${s.id}`,
                 address: s.address,
                 supported_genres: s.supported_genres,
@@ -614,9 +667,20 @@ function Main() {
             hasActive = true;
             const coords = new window.kakao.maps.LatLng(station.latitude, station.longitude);
             
-            const pinColor = getMarkerColor(station.supported_genres);
+            const confirmedStationId = sessionStorage.getItem('confirmed-station-id');
+            const isConfirmed = confirmedStationId && station.id.toString() === confirmedStationId;
+
+            const pinColor = getMarkerColor(station.current_count ?? 0);
             const contentNode = document.createElement('div');
+            contentNode.style.position = 'relative';
+
+            const glowHtml = isConfirmed ? `
+              <div style="position: absolute; top: -14px; left: -14px; width: 72px; height: 72px; border-radius: 50%; background: ${pinColor}; filter: blur(12px); opacity: 0.5; z-index: -2; pointer-events: none;"></div>
+              <div style="position: absolute; top: -6px; left: -6px; width: 56px; height: 56px; border-radius: 50%; background: white; filter: blur(8px); opacity: 0.9; z-index: -1; pointer-events: none;"></div>
+            ` : '';
+
             contentNode.innerHTML = `
+              ${glowHtml}
               <div style="
                 width: 44px;
                 height: 44px;
@@ -629,6 +693,8 @@ function Main() {
                 box-shadow: 2px 2px 6px rgba(0,0,0,0.3);
                 border: 2px solid white;
                 cursor: pointer;
+                position: relative;
+                z-index: 1;
               ">
                 <div style="transform: rotate(45deg); color: white; font-weight: bold; font-size: 16px;">
                   ${station.current_count ?? 0}
