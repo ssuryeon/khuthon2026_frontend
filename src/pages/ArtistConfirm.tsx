@@ -9,6 +9,7 @@ type ConfirmPayload = {
     address?: string;
     supported_genres?: string;
     capacity?: number;
+    id?: number;
   };
   selectedDay?: number;
   selectedTime?: string;
