@@ -7,6 +7,8 @@ import { IoMdMusicalNote } from "react-icons/io";
 import { GoHome } from "react-icons/go";
 import { Button } from '../components/Button';
 import { modeStore } from '../stores/userStore';
+import { userStore } from '../stores/userStore';
+import {getStation} from '../utils/station';
 
 const displays = [
     {
@@ -193,6 +195,30 @@ function ViewerMode({ map }: { map: any }) {
     const [category, setCategory] = useState('');
     const [selectedPlace, setSelectedPlace] = useState<IList | null>(null);
     const markersRef = useRef<any[]>([]);
+    const overlaysRef = useRef<Record<string, any>>({});
+    const [demandByPlaceId, setDemandByPlaceId] = useState<Record<string, number>>({});
+    const appliedRef = useRef<Set<string>>(new Set());
+    const userId = userStore((state) => state.user_id);
+
+    const placeIdOf = (p: IList) => p.address;
+
+    const overlayHtml = (count: number) => `
+      <div style="
+        min-width: 32px;
+        height: 22px;
+        padding: 0 8px;
+        border-radius: 999px;
+        background: rgba(108, 92, 231, 0.95);
+        color: white;
+        font-size: 12px;
+        font-weight: 900;
+        display: flex;
+        align-items: center;
+        justify-content: center;
+        box-shadow: 0 6px 14px rgba(0,0,0,0.18);
+        border: 1px solid rgba(255,255,255,0.55);
+      ">${count}</div>
+    `;
 
     const onClick = (new_c: string) => {
         setCategory(new_c);
@@ -210,6 +236,8 @@ function ViewerMode({ map }: { map: any }) {
         // 🔥 기존 마커 제거
         markersRef.current.forEach((m) => m.setMap(null));
         markersRef.current = [];
+        Object.values(overlaysRef.current).forEach((ov: any) => ov.setMap(null));
+        overlaysRef.current = {};
 
         const addMarkersAndFitBounds = (items: IList[]) => {
             if (items.length === 0) return;
@@ -229,6 +257,17 @@ function ViewerMode({ map }: { map: any }) {
                         markersRef.current.push(marker);
                         bounds.extend(coords);
                         okCount += 1;
+
+                        const placeId = placeIdOf(item);
+                        const count = demandByPlaceId[placeId] ?? 0;
+                        const overlay = new window.kakao.maps.CustomOverlay({
+                            position: coords,
+                            content: overlayHtml(count),
+                            yAnchor: 1.8,
+                            zIndex: 10,
+                        });
+                        overlay.setMap(map);
+                        overlaysRef.current[placeId] = overlay;
                     }
 
                     pending -= 1;
@@ -398,6 +437,28 @@ function ViewerMode({ map }: { map: any }) {
 
                     <button
                       type="button"
+                      onClick={() => {
+                        if (!selectedPlace) return;
+                        if (userId == null) {
+                          window.alert('로그인 후 수요 신청이 가능합니다.');
+                          return;
+                        }
+
+                        const placeId = placeIdOf(selectedPlace);
+                        const key = `${userId}:${placeId}`;
+                        if (appliedRef.current.has(key)) {
+                          window.alert('이미 수요 신청한 장소입니다.');
+                          return;
+                        }
+                        appliedRef.current.add(key);
+
+                        setDemandByPlaceId((prev) => {
+                          const next = { ...prev, [placeId]: (prev[placeId] ?? 0) + 1 };
+                          const overlay = overlaysRef.current[placeId];
+                          if (overlay) overlay.setContent(overlayHtml(next[placeId]));
+                          return next;
+                        });
+                      }}
                       style={{
                         height: 52,
                         borderRadius: 16,
