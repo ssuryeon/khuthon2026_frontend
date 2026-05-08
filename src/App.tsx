@@ -1,12 +1,12 @@
 import Globalstyle from "./styles/GlobalStyle";
 import { createBrowserRouter, RouterProvider } from 'react-router'
-import Home from './pages/Home';
+import Main from './pages/Main';
 import Splash from './pages/Splash';
 
 const router = createBrowserRouter([
   {
     path: '/',
-    Component: Home,
+    Component: Main,
   },
   {
     path: '/splash',
