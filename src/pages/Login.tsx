@@ -155,6 +155,7 @@ function Login() {
             capacity: s.capacity,
             hourly_cost: s.hourly_cost,
             is_active: s.is_active,
+            current_count: s.current_count,
         }));
         sessionStorage.setItem('stations-cache', JSON.stringify(normalized));
       } catch (e) {

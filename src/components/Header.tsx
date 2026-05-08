@@ -4,7 +4,8 @@ import { FaRegBell } from "react-icons/fa";
 import { useNavigate } from 'react-router';
 
 interface IHeader {
-    text:string
+    text:string;
+    onTitleClick?: () => void;
 }
 
 const Container = styled.div`
@@ -19,13 +20,21 @@ const Container = styled.div`
     padding: 8;
 `;
 
-function Header({text}:IHeader) {
+function Header({text, onTitleClick}:IHeader) {
     const navigate = useNavigate();
 
     return (
         <Container>
             <FiMenu size={20}/>
-            <span style={{fontSize: 20, fontWeight: 500}}>{text}</span>
+            <span 
+                style={{fontSize: 20, fontWeight: 500, cursor: 'pointer'}} 
+                onClick={() => {
+                    navigate('/main');
+                    if (onTitleClick) onTitleClick();
+                }}
+            >
+                {text}
+            </span>
             <FaRegBell size={20} onClick={() => navigate('/alarm')}/>
         </Container>
     )

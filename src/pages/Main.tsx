@@ -20,6 +20,7 @@ type StationApi = {
     supported_genres: string;
     hourly_cost: number;
     is_active: boolean;
+    current_count?: number;
 }
 
 interface IList {
@@ -38,6 +39,7 @@ interface IList {
     capacity: number,
     hourly_cost: number,
     is_active: boolean,
+    current_count?: number,
 }
 
 const matchesCategory = (genre: string, category: string) => {
@@ -167,11 +169,34 @@ function ViewerMode({ map, stations }: { map: any, stations: IList[] }) {
 
         filteredItems.forEach((item) => {
             const coords = new window.kakao.maps.LatLng(item.latitude, item.longitude);
-            const marker = new window.kakao.maps.Marker({
-                map,
+            
+            const redMarkerHtml = `
+              <div style="
+                width: 44px;
+                height: 44px;
+                background: #EA4335;
+                border-radius: 50% 50% 50% 0;
+                transform: rotate(-45deg);
+                display: flex;
+                align-items: center;
+                justify-content: center;
+                box-shadow: 2px 2px 6px rgba(0,0,0,0.3);
+                border: 2px solid white;
+              ">
+                <div style="transform: rotate(45deg); color: white; font-weight: bold; font-size: 16px;">
+                  ${item.current_count ?? 0}
+                </div>
+              </div>
+            `;
+
+            const markerOverlay = new window.kakao.maps.CustomOverlay({
                 position: coords,
+                content: redMarkerHtml,
+                yAnchor: 1.0,
+                zIndex: 15,
             });
-            markersRef.current.push(marker);
+            markerOverlay.setMap(map);
+            markersRef.current.push(markerOverlay);
             bounds.extend(coords);
 
             const placeId = placeIdOf(item);
@@ -476,10 +501,19 @@ function ViewerMode({ map, stations }: { map: any, stations: IList[] }) {
 
 function Main() {
     const mapRef = useRef(null);
+    const initialMarkersRef = useRef<any[]>([]);
     const selected = modeStore((state) => state.selected);
     const mode = modeStore((state) => state.mode);
+    const setSelected = modeStore((state) => state.setSelected);
     const [map, setMap] = useState<any>(null);
-    const [stations, setStations] = useState<IList[]>([]);
+    const [stations, setStations] = useState<IList[]>(() => {
+        try {
+            const cached = sessionStorage.getItem('stations-cache');
+            return cached ? JSON.parse(cached) : [];
+        } catch {
+            return [];
+        }
+    });
 
     useEffect(() => {
         const fetchStations = async () => {
@@ -494,6 +528,7 @@ function Main() {
                 capacity: s.capacity,
                 hourly_cost: s.hourly_cost,
                 is_active: s.is_active,
+                current_count: s.current_count,
             }));
 
             try {
@@ -532,19 +567,62 @@ function Main() {
         if (!map || stations.length === 0) return;
         if (!window.kakao?.maps) return;
 
+        if (selected) {
+            initialMarkersRef.current.forEach((m) => m.setMap(null));
+            initialMarkersRef.current = [];
+            return;
+        }
+
+        initialMarkersRef.current.forEach((m) => m.setMap(null));
+        initialMarkersRef.current = [];
+
         const bounds = new window.kakao.maps.LatLngBounds();
         let hasActive = false;
-        stations.forEach((s) => {
-            if (s.is_active) {
-                bounds.extend(new window.kakao.maps.LatLng(s.latitude, s.longitude));
-                hasActive = true;
-            }
+
+        stations.forEach((station) => {
+            if (!station.is_active) return;
+            hasActive = true;
+            const coords = new window.kakao.maps.LatLng(station.latitude, station.longitude);
+            
+            const redMarkerHtml = `
+              <div style="
+                width: 44px;
+                height: 44px;
+                background: #EA4335;
+                border-radius: 50% 50% 50% 0;
+                transform: rotate(-45deg);
+                display: flex;
+                align-items: center;
+                justify-content: center;
+                box-shadow: 2px 2px 6px rgba(0,0,0,0.3);
+                border: 2px solid white;
+              ">
+                <div style="transform: rotate(45deg); color: white; font-weight: bold; font-size: 16px;">
+                  ${station.current_count ?? 0}
+                </div>
+              </div>
+            `;
+
+            const overlay = new window.kakao.maps.CustomOverlay({
+                position: coords,
+                content: redMarkerHtml,
+                yAnchor: 1.0,
+                zIndex: 15,
+            });
+            overlay.setMap(map);
+            initialMarkersRef.current.push(overlay);
+            bounds.extend(coords);
         });
 
         if (hasActive) {
             map.setBounds(bounds);
         }
-    }, [map, stations]);
+
+        return () => {
+            initialMarkersRef.current.forEach((m) => m.setMap(null));
+            initialMarkersRef.current = [];
+        };
+    }, [map, stations, selected]);
 
     useEffect(() => {
         console.log(selected)
@@ -553,7 +631,7 @@ function Main() {
 
     return (
         <div style={{ display: 'flex', flexDirection: 'column', width: '100%', height: '100vh', minHeight: 0 }}>
-            <Header text="문화 정류장" />
+            <Header text="문화 정류장" onTitleClick={() => setSelected(false)} />
             <div style={{ width: '100%', flex: 1, overflow: 'hidden', minHeight: 0, position: 'relative' }}>
                 <div ref={mapRef} style={{ width: '100%', height: '100%' }} id='map' />
                 {selected
