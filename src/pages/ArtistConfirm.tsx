@@ -89,6 +89,9 @@ function ArtistConfirm() {
         <button
           type="button"
           onClick={() => {
+            if (place?.id) {
+              sessionStorage.setItem('confirmed-station-id', place.id.toString());
+            }
             setMode('artist');
             navigate('/main');
           }}
