@@ -56,6 +56,14 @@ const matchesCategory = (genre: string, category: string) => {
     return true;
 }
 
+const getMarkerColor = (genres: string) => {
+    const g = (genres || '').toLowerCase();
+    if (g.includes('전시')) return '#EA4335'; // Red
+    if (g.includes('음악')) return '#4285F4'; // Blue
+    if (g.includes('관람')) return '#FBBC05'; // Yellow
+    return '#34A853'; // Green
+}
+
 function List({ imageUrl, name, address, info, phone, onClick }: { onClick?: () => void } & IList) {
     return (
         <div
@@ -170,11 +178,12 @@ function ViewerMode({ map, stations }: { map: any, stations: IList[] }) {
         filteredItems.forEach((item) => {
             const coords = new window.kakao.maps.LatLng(item.latitude, item.longitude);
             
+            const pinColor = getMarkerColor(item.supported_genres);
             const redMarkerHtml = `
               <div style="
                 width: 44px;
                 height: 44px;
-                background: #EA4335;
+                background: ${pinColor};
                 border-radius: 50% 50% 50% 0;
                 transform: rotate(-45deg);
                 display: flex;
@@ -584,11 +593,12 @@ function Main() {
             hasActive = true;
             const coords = new window.kakao.maps.LatLng(station.latitude, station.longitude);
             
+            const pinColor = getMarkerColor(station.supported_genres);
             const redMarkerHtml = `
               <div style="
                 width: 44px;
                 height: 44px;
-                background: #EA4335;
+                background: ${pinColor};
                 border-radius: 50% 50% 50% 0;
                 transform: rotate(-45deg);
                 display: flex;
