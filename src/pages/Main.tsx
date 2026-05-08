@@ -123,7 +123,7 @@ interface IList {
     address: string,
     info?: string,
     hours?: string,
-    closed?: string,
+    closed?: string | null,
     phone: string,
     status?: string,
 }
@@ -189,12 +189,12 @@ function Modal() {
     )
 }
 
-function ViewerMode({ map }) {
+function ViewerMode({ map }: { map: any }) {
     const [category, setCategory] = useState('');
     const [selectedPlace, setSelectedPlace] = useState<IList | null>(null);
-    const markersRef = useRef([]);
+    const markersRef = useRef<any[]>([]);
 
-    const onClick = (new_c) => {
+    const onClick = (new_c: string) => {
         setCategory(new_c);
         setSelectedPlace(null);
 
@@ -204,7 +204,7 @@ function ViewerMode({ map }) {
         const geocoder = new window.kakao.maps.services.Geocoder();
 
         // 🔥 기존 마커 제거
-        markersRef.current.forEach(m => m.setMap(null));
+        markersRef.current.forEach((m) => m.setMap(null));
         markersRef.current = [];
 
         const addMarkersAndFitBounds = (items: IList[]) => {
@@ -215,7 +215,7 @@ function ViewerMode({ map }) {
             let okCount = 0;
 
             items.forEach((item) => {
-                geocoder.addressSearch(item.address, (res, status) => {
+                geocoder.addressSearch(item.address, (res: any, status: any) => {
                     if (status === window.kakao.maps.services.Status.OK) {
                         const coords = new window.kakao.maps.LatLng(res[0].y, res[0].x);
                         const marker = new window.kakao.maps.Marker({
@@ -433,7 +433,7 @@ function Main() {
     const mapRef = useRef(null);
     const selected = modeStore((state) => state.selected);
     const mode = modeStore((state) => state.mode);
-    const [map, setMap] = useState(null);
+    const [map, setMap] = useState<any>(null);
 
     useEffect(() => {
         const container = mapRef.current;

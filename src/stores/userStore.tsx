@@ -15,8 +15,8 @@ export const modeStore = create<Store>((set) => ({
 }))
 
 type userStore = {
-    user_id: number;
-    setUserId: (arg0: number) => void;
+    user_id: number | null;
+    setUserId: (arg0: number | null) => void;
 }
 
 export const userStore = create<userStore>((set) => ({
