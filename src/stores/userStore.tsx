@@ -1,4 +1,5 @@
 import {create} from "zustand";
+import { persist } from "zustand/middleware";
 
 type Store = {
     mode: string;
@@ -7,12 +8,19 @@ type Store = {
     setSelected: () => void;
 }
 
-export const modeStore = create<Store>((set) => ({
-    mode: '',
-    selected: false,
-    setMode: (newMode) => set({mode: newMode}),
-    setSelected: () => set((state) => ({selected: !state.selected})),
-}))
+export const modeStore = create<Store>()(
+    persist(
+        (set) => ({
+            mode: '',
+            selected: false,
+            setMode: (newMode) => set({mode: newMode}),
+            setSelected: () => set((state) => ({selected: !state.selected})),
+        }),
+        {
+            name: 'mode-store',
+        }
+    )
+)
 
 type userStore = {
     user_id: number | null;

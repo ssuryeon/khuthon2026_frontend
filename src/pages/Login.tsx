@@ -139,8 +139,29 @@ function Login() {
   const id = userStore((store) => store.user_id);
   const navigate = useNavigate();
 
-  const onClick = () => {
-    if(id) navigate('/main');
+  const onClick = async () => {
+    if(id) {
+      try {
+        const res = await import('../utils/station').then(m => m.getStation());
+        const rows = Array.isArray(res) ? res : (Array.isArray(res?.data) ? res.data : []);
+        const normalized = rows.map((s: any) => ({
+            id: s.id,
+            latitude: s.latitude,
+            longitude: s.longitude,
+            imageUrl: '/6.png',
+            name: `정류장 #${s.id}`,
+            address: s.address,
+            supported_genres: s.supported_genres,
+            capacity: s.capacity,
+            hourly_cost: s.hourly_cost,
+            is_active: s.is_active,
+        }));
+        sessionStorage.setItem('stations-cache', JSON.stringify(normalized));
+      } catch (e) {
+        console.error('Failed to pre-fetch stations:', e);
+      }
+      navigate('/main');
+    }
     else {
       alert('회원가입을 해주세요.');
       navigate('/signup');
