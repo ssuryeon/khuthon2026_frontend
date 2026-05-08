@@ -140,6 +140,7 @@ function ViewerMode({ map, stations }: { map: any, stations: IList[] }) {
         }
         return null;
     });
+    const [filteredItems, setFilteredItems] = useState<IList[]>([]);
     const [showSuccessModal, setShowSuccessModal] = useState(false);
     const markersRef = useRef<any[]>([]);
     const overlaysRef = useRef<Record<string, any>>({});
@@ -169,6 +170,50 @@ function ViewerMode({ map, stations }: { map: any, stations: IList[] }) {
     `;
 
     useEffect(() => {
+        let isCancelled = false;
+        
+        const fetchCategoryData = async () => {
+            let genreStr = '';
+            if (category === 'display') genreStr = '전시';
+            else if (category === 'music_concert') genreStr = '음악';
+            else if (category === 'viewing_concert') genreStr = '관람';
+
+            try {
+                const res = await getStation(genreStr);
+                const rows: StationApi[] = Array.isArray(res) ? res : (Array.isArray(res?.data) ? res.data : []);
+                
+                const normalized = rows.map((s) => ({
+                    id: s.id,
+                    latitude: s.latitude,
+                    longitude: s.longitude,
+                    imageUrl: '/6.png',
+                    name: `정류장 #${s.id}`,
+                    address: s.address,
+                    supported_genres: s.supported_genres,
+                    capacity: s.capacity,
+                    hourly_cost: s.hourly_cost,
+                    is_active: s.is_active,
+                    current_count: s.current_count,
+                }));
+                if (!isCancelled) {
+                    setFilteredItems(normalized);
+                }
+            } catch (e) {
+                console.error('Failed to fetch genre data:', e);
+                if (!isCancelled) {
+                    setFilteredItems(stations.filter((s) => s.is_active && matchesCategory(s.supported_genres, category)));
+                }
+            }
+        };
+
+        fetchCategoryData();
+
+        return () => {
+            isCancelled = true;
+        };
+    }, [category, stations]);
+
+    useEffect(() => {
         if (!map) return;
         if (!window.kakao?.maps) {
             console.warn('[kakao] maps sdk not loaded.');
@@ -179,8 +224,6 @@ function ViewerMode({ map, stations }: { map: any, stations: IList[] }) {
         markersRef.current = [];
         Object.values(overlaysRef.current).forEach((ov: any) => ov.setMap(null));
         overlaysRef.current = {};
-
-        const filteredItems = stations.filter((s) => s.is_active && matchesCategory(s.supported_genres, category));
 
         if (filteredItems.length === 0) return;
 
@@ -246,7 +289,7 @@ function ViewerMode({ map, stations }: { map: any, stations: IList[] }) {
         });
 
         map.setBounds(bounds);
-    }, [map, stations, category, demandByPlaceId]);
+    }, [map, filteredItems, demandByPlaceId]);
 
     const onClick = (new_c: string) => {
         setCategory(new_c);
@@ -484,8 +527,7 @@ function ViewerMode({ map, stations }: { map: any, stations: IList[] }) {
                         )}
                     </div>
                 ) : (
-                    stations
-                        .filter((s) => s.is_active && matchesCategory(s.supported_genres, category))
+                    filteredItems
                         .map((d) => (
                             <List
                                 key={d.id}

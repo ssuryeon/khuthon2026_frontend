@@ -1,8 +1,9 @@
 const BASE_URL = "https://khuthon2026-frontend.vercel.app/proxy";
 
-export const getStation = async () => {
+export const getStation = async (genre?: string) => {
     console.log('getStation start');
-    const res = await (await fetch(`${BASE_URL}/stations`, {
+    const url = genre ? `${BASE_URL}/stations?genre=${encodeURIComponent(genre)}` : `${BASE_URL}/stations`;
+    const res = await (await fetch(url, {
         method: 'GET'
     })).json();
     console.log(res);
