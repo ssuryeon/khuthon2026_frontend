@@ -282,7 +282,7 @@ function SignUp() {
   const nicknameCount = useMemo(() => `${Math.min(nickname.length, 10)}/10`, [nickname]);
   const idCount = useMemo(() => `${Math.min(userId.length, 20)}/20`, [userId]);
 
-  const [agreeAll, setAgreeAll] = useState(true);
+  const [agreeAll, setAgreeAll] = useState(false);
   const [agreeTerms, setAgreeTerms] = useState(false);
   const [agreePrivacy, setAgreePrivacy] = useState(false);
   const navigate = useNavigate();

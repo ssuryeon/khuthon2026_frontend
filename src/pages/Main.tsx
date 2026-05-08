@@ -8,6 +8,7 @@ import { GoHome } from "react-icons/go";
 import { Button } from '../components/Button';
 import { modeStore } from '../stores/userStore';
 import { userStore } from '../stores/userStore';
+import { getStation } from '../utils/station';
 
 
 const displays = [
@@ -181,7 +182,7 @@ function Modal() {
                         <IoMdMusicalNote size={45}/>
                         <span style={{fontSize: 14, fontWeight: 600}}>아티스트 모드</span>
                     </div>
-                    <div style={{backgroundColor: '#EDEDED', padding: '13px 15px', borderRadius: 10, display: 'flex', flexDirection: 'column', width: '30%', justifyContent: 'center', alignItems: 'center', boxSizing: 'border-box', cursor: 'pointer'}} onClick={() => {setMode('renter'); setSelected()}}>
+                    <div style={{backgroundColor: '#EDEDED', padding: '13px 15px', borderRadius: 10, display: 'flex', flexDirection: 'column', width: '30%', justifyContent: 'center', alignItems: 'center', boxSizing: 'border-box', cursor: 'pointer'}} onClick={() => {}}>
                         <GoHome size={45}/>
                         <span style={{fontSize: 14, fontWeight: 600}}>공간 대여자</span>
                     </div>
@@ -199,6 +200,12 @@ function ViewerMode({ map }: { map: any }) {
     const [demandByPlaceId, setDemandByPlaceId] = useState<Record<string, number>>({});
     const appliedRef = useRef<Set<string>>(new Set());
     const userId = userStore((state) => state.user_id);
+    const [dbStations, setDbStations] = useState<any[]>([]);
+    const [showSuccessModal, setShowSuccessModal] = useState(false);
+
+    useEffect(() => {
+        getStation().then(data => setDbStations(data)).catch(console.error);
+    }, []);
 
     const placeIdOf = (p: IList) => p.address;
 
@@ -240,11 +247,59 @@ function ViewerMode({ map }: { map: any }) {
         overlaysRef.current = {};
 
         const addMarkersAndFitBounds = (items: IList[]) => {
-            if (items.length === 0) return;
-
             const bounds = new window.kakao.maps.LatLngBounds();
+            let dbOk = false;
+
+            dbStations.forEach((station: any) => {
+                let match = false;
+                if (new_c === 'display' && station.supported_genres.includes('전시')) match = true;
+                if (new_c === 'music_concert' && station.supported_genres.includes('음악')) match = true;
+                if (new_c === 'viewing_concert' && station.supported_genres.includes('관람')) match = true;
+                
+                if (match) {
+                    const coords = new window.kakao.maps.LatLng(station.latitude, station.longitude);
+                    const redMarkerHtml = `
+                      <div style="
+                        width: 44px;
+                        height: 44px;
+                        background: #EA4335;
+                        border-radius: 50% 50% 50% 0;
+                        transform: rotate(-45deg);
+                        display: flex;
+                        align-items: center;
+                        justify-content: center;
+                        box-shadow: 2px 2px 6px rgba(0,0,0,0.3);
+                        border: 2px solid white;
+                        box-sizing: border-box;
+                      ">
+                        <div style="transform: rotate(45deg); color: white; font-weight: bold; font-size: 16px;">
+                          ${station.current_count}
+                        </div>
+                      </div>
+                    `;
+
+                    const dbOverlay = new window.kakao.maps.CustomOverlay({
+                        position: coords,
+                        content: redMarkerHtml,
+                        yAnchor: 1.0,
+                        zIndex: 15,
+                    });
+                    dbOverlay.setMap(map);
+                    overlaysRef.current['db_' + station.id] = dbOverlay;
+                    bounds.extend(coords);
+                    dbOk = true;
+                }
+            });
+
+            if (items.length === 0 && !dbOk) return;
+
             let pending = items.length;
             let okCount = 0;
+
+            if (pending === 0 && dbOk) {
+                map.setBounds(bounds);
+                return;
+            }
 
             items.forEach((item) => {
                 geocoder.addressSearch(item.address, (res: any, status: any) => {
@@ -271,7 +326,7 @@ function ViewerMode({ map }: { map: any }) {
                     }
 
                     pending -= 1;
-                    if (pending === 0 && okCount > 0) {
+                    if (pending === 0 && (okCount > 0 || dbOk)) {
                         map.setBounds(bounds);
                     }
                 });
@@ -458,6 +513,7 @@ function ViewerMode({ map }: { map: any }) {
                           if (overlay) overlay.setContent(overlayHtml(next[placeId]));
                           return next;
                         });
+                        setShowSuccessModal(true);
                       }}
                       style={{
                         height: 52,
@@ -490,6 +546,38 @@ function ViewerMode({ map }: { map: any }) {
                             : null)
                 )}
             </div>
+            {showSuccessModal && (
+                <div style={{
+                    position: 'fixed', inset: 0, zIndex: 9999, background: 'rgba(0,0,0,0.5)', 
+                    display: 'flex', alignItems: 'center', justifyContent: 'center', pointerEvents: 'auto'
+                }}>
+                    <div style={{
+                        background: '#fff', borderRadius: 20, width: 300, padding: 24,
+                        display: 'flex', flexDirection: 'column', alignItems: 'center', boxSizing: 'border-box'
+                    }}>
+                        <div style={{
+                            width: 60, height: 60, borderRadius: 30, background: '#6C5CE7',
+                            display: 'flex', alignItems: 'center', justifyContent: 'center',
+                            marginBottom: 16, color: '#fff', fontSize: 32, fontWeight: 'bold', position: 'relative'
+                        }}>
+                            ✓
+                            <div style={{position: 'absolute', top: -10, right: -15, color: '#F5B301', fontSize: 24}}>✦</div>
+                            <div style={{position: 'absolute', top: 5, right: -25, color: '#6C5CE7', fontSize: 18}}>✦</div>
+                        </div>
+                        <div style={{fontSize: 18, fontWeight: 800, marginBottom: 8}}>신청이 완료되었습니다!</div>
+                        <div style={{fontSize: 13, color: '#656565', marginBottom: 24, textAlign: 'center'}}>
+                            신청이 승인되면 알림과 문자로 안내드릴게요.
+                        </div>
+                        <button
+                            onClick={() => setShowSuccessModal(false)}
+                            style={{
+                                width: '100%', height: 48, borderRadius: 12, background: '#6C5CE7',
+                                color: '#fff', border: 'none', fontSize: 16, fontWeight: 700, cursor: 'pointer'
+                            }}
+                        >확인</button>
+                    </div>
+                </div>
+            )}
         </div>
     );
 }
