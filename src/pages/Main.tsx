@@ -265,7 +265,11 @@ function ViewerMode({ map, stations }: { map: any, stations: IList[] }) {
               </div>
             `;
             contentNode.onclick = () => {
-                setSelectedPlace(item);
+                if (isConfirmed && mode !== 'artist') {
+                    navigate(`/viewer-station/${item.id}`);
+                } else {
+                    setSelectedPlace(item);
+                }
             };
 
             const markerOverlay = new window.kakao.maps.CustomOverlay({
@@ -285,7 +289,11 @@ function ViewerMode({ map, stations }: { map: any, stations: IList[] }) {
             const overlayNode = document.createElement('div');
             overlayNode.innerHTML = overlayHtml(count);
             overlayNode.onclick = () => {
-                setSelectedPlace(item);
+                if (isConfirmed && mode !== 'artist') {
+                    navigate(`/viewer-station/${item.id}`);
+                } else {
+                    setSelectedPlace(item);
+                }
             };
 
             const overlay = new window.kakao.maps.CustomOverlay({
@@ -587,6 +595,7 @@ function ViewerMode({ map, stations }: { map: any, stations: IList[] }) {
 }
 
 function Main() {
+    const navigate = useNavigate();
     const mapRef = useRef(null);
     const initialMarkersRef = useRef<any[]>([]);
     const selected = modeStore((state) => state.selected);
@@ -706,9 +715,13 @@ function Main() {
               </div>
             `;
             contentNode.onclick = () => {
-                sessionStorage.setItem('initial-selected-place', JSON.stringify(station));
-                modeStore.getState().setMode('viewer');
-                modeStore.getState().setSelected();
+                if (isConfirmed) {
+                    navigate(`/viewer-station/${station.id}`);
+                } else {
+                    sessionStorage.setItem('initial-selected-place', JSON.stringify(station));
+                    modeStore.getState().setMode('viewer');
+                    modeStore.getState().setSelected();
+                }
             };
 
             const overlay = new window.kakao.maps.CustomOverlay({

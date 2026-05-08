@@ -8,6 +8,7 @@ import Alarm from './pages/Alarm';
 import Activity from './pages/Activity';
 import ArtistPlace from './pages/ArtistPlace';
 import ArtistConfirm from './pages/ArtistConfirm';
+import ViewerStationDetail from './pages/ViewerStationDetail';
 
 const router = createBrowserRouter([
   {
@@ -41,6 +42,10 @@ const router = createBrowserRouter([
   {
     path: '/artist-confirm',
     Component: ArtistConfirm,
+  },
+  {
+    path: '/viewer-station/:stationId',
+    Component: ViewerStationDetail,
   }
 ])
 
