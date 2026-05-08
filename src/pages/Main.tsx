@@ -129,7 +129,18 @@ function Modal() {
 function ViewerMode({ map, stations }: { map: any, stations: IList[] }) {
     const navigate = useNavigate();
     const [category, setCategory] = useState('display');
-    const [selectedPlace, setSelectedPlace] = useState<IList | null>(null);
+    const [selectedPlace, setSelectedPlace] = useState<IList | null>(() => {
+        try {
+            const cached = sessionStorage.getItem('initial-selected-place');
+            if (cached) {
+                sessionStorage.removeItem('initial-selected-place');
+                return JSON.parse(cached);
+            }
+        } catch (e) {
+            // ignore
+        }
+        return null;
+    });
     const [showSuccessModal, setShowSuccessModal] = useState(false);
     const markersRef = useRef<any[]>([]);
     const overlaysRef = useRef<Record<string, any>>({});
@@ -180,7 +191,8 @@ function ViewerMode({ map, stations }: { map: any, stations: IList[] }) {
             const coords = new window.kakao.maps.LatLng(item.latitude, item.longitude);
             
             const pinColor = getMarkerColor(item.supported_genres);
-            const redMarkerHtml = `
+            const contentNode = document.createElement('div');
+            contentNode.innerHTML = `
               <div style="
                 width: 44px;
                 height: 44px;
@@ -192,18 +204,23 @@ function ViewerMode({ map, stations }: { map: any, stations: IList[] }) {
                 justify-content: center;
                 box-shadow: 2px 2px 6px rgba(0,0,0,0.3);
                 border: 2px solid white;
+                cursor: pointer;
               ">
                 <div style="transform: rotate(45deg); color: white; font-weight: bold; font-size: 16px;">
                   ${item.current_count ?? 0}
                 </div>
               </div>
             `;
+            contentNode.onclick = () => {
+                setSelectedPlace(item);
+            };
 
             const markerOverlay = new window.kakao.maps.CustomOverlay({
                 position: coords,
-                content: redMarkerHtml,
+                content: contentNode,
                 yAnchor: 1.0,
                 zIndex: 15,
+                clickable: true
             });
             markerOverlay.setMap(map);
             markersRef.current.push(markerOverlay);
@@ -598,7 +615,8 @@ function Main() {
             const coords = new window.kakao.maps.LatLng(station.latitude, station.longitude);
             
             const pinColor = getMarkerColor(station.supported_genres);
-            const redMarkerHtml = `
+            const contentNode = document.createElement('div');
+            contentNode.innerHTML = `
               <div style="
                 width: 44px;
                 height: 44px;
@@ -610,18 +628,25 @@ function Main() {
                 justify-content: center;
                 box-shadow: 2px 2px 6px rgba(0,0,0,0.3);
                 border: 2px solid white;
+                cursor: pointer;
               ">
                 <div style="transform: rotate(45deg); color: white; font-weight: bold; font-size: 16px;">
                   ${station.current_count ?? 0}
                 </div>
               </div>
             `;
+            contentNode.onclick = () => {
+                sessionStorage.setItem('initial-selected-place', JSON.stringify(station));
+                modeStore.getState().setMode('viewer');
+                modeStore.getState().setSelected();
+            };
 
             const overlay = new window.kakao.maps.CustomOverlay({
                 position: coords,
-                content: redMarkerHtml,
+                content: contentNode,
                 yAnchor: 1.0,
                 zIndex: 15,
+                clickable: true
             });
             overlay.setMap(map);
             initialMarkersRef.current.push(overlay);
