@@ -146,63 +146,51 @@ function ViewerMode({ map, stations }: { map: any, stations: IList[] }) {
       ">${count}</div>
     `;
 
-    const onClick = (new_c: string) => {
-        setCategory(new_c);
-        setSelectedPlace(null);
-
-        // 🔥 안전 체크
+    useEffect(() => {
         if (!map) return;
         if (!window.kakao?.maps) {
             console.warn('[kakao] maps sdk not loaded.');
             return;
         }
 
-        // 🔥 기존 마커 제거
         markersRef.current.forEach((m) => m.setMap(null));
         markersRef.current = [];
         Object.values(overlaysRef.current).forEach((ov: any) => ov.setMap(null));
         overlaysRef.current = {};
 
-        const filteredItems = stations.filter((s) => s.is_active && matchesCategory(s.supported_genres, new_c));
+        const filteredItems = stations.filter((s) => s.is_active && matchesCategory(s.supported_genres, category));
 
-        const addMarkersAndFitBounds = (items: IList[]) => {
-            if (items.length === 0) return;
+        if (filteredItems.length === 0) return;
 
-            const bounds = new window.kakao.maps.LatLngBounds();
+        const bounds = new window.kakao.maps.LatLngBounds();
 
-            items.forEach((item) => {
-                const coords = new window.kakao.maps.LatLng(item.latitude, item.longitude);
-                const marker = new window.kakao.maps.Marker({
-                    map,
-                    position: coords,
-                });
-                markersRef.current.push(marker);
-                bounds.extend(coords);
-
-                const placeId = placeIdOf(item);
-                const count = demandByPlaceId[placeId] ?? 0;
-                const overlay = new window.kakao.maps.CustomOverlay({
-                    position: coords,
-                    content: overlayHtml(count),
-                    yAnchor: 1.8,
-                    zIndex: 10,
-                });
-                overlay.setMap(map);
-                overlaysRef.current[placeId] = overlay;
+        filteredItems.forEach((item) => {
+            const coords = new window.kakao.maps.LatLng(item.latitude, item.longitude);
+            const marker = new window.kakao.maps.Marker({
+                map,
+                position: coords,
             });
+            markersRef.current.push(marker);
+            bounds.extend(coords);
 
-            map.setBounds(bounds);
-        };
+            const placeId = placeIdOf(item);
+            const count = demandByPlaceId[placeId] ?? 0;
+            const overlay = new window.kakao.maps.CustomOverlay({
+                position: coords,
+                content: overlayHtml(count),
+                yAnchor: 1.8,
+                zIndex: 10,
+            });
+            overlay.setMap(map);
+            overlaysRef.current[placeId] = overlay;
+        });
 
-        switch (new_c) {
-            case "display":
-            case "music_concert":
-            case "viewing_concert":
-                addMarkersAndFitBounds(filteredItems);
-                break;
-            default:
-                break;
-        }
+        map.setBounds(bounds);
+    }, [map, stations, category, demandByPlaceId]);
+
+    const onClick = (new_c: string) => {
+        setCategory(new_c);
+        setSelectedPlace(null);
     };
 
     return (
@@ -505,6 +493,24 @@ function Main() {
         setMap(created);
 
     }, [])
+
+    useEffect(() => {
+        if (!map || stations.length === 0) return;
+        if (!window.kakao?.maps) return;
+
+        const bounds = new window.kakao.maps.LatLngBounds();
+        let hasActive = false;
+        stations.forEach((s) => {
+            if (s.is_active) {
+                bounds.extend(new window.kakao.maps.LatLng(s.latitude, s.longitude));
+                hasActive = true;
+            }
+        });
+        
+        if (hasActive) {
+            map.setBounds(bounds);
+        }
+    }, [map, stations]);
 
     useEffect(() => {
         console.log(selected)
