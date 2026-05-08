@@ -6,6 +6,8 @@ import Login from './pages/Login';
 import SignUp from './pages/SignUp';
 import Alarm from './pages/Alarm';
 import Activity from './pages/Activity';
+import ArtistPlace from './pages/ArtistPlace';
+import ArtistConfirm from './pages/ArtistConfirm';
 
 const router = createBrowserRouter([
   {
@@ -31,6 +33,14 @@ const router = createBrowserRouter([
   {
     path: '/activity',
     Component: Activity,
+  },
+  {
+    path: '/artist-place',
+    Component: ArtistPlace,
+  },
+  {
+    path: '/artist-confirm',
+    Component: ArtistConfirm,
   }
 ])
 
