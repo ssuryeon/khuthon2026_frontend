@@ -282,7 +282,7 @@ function SignUp() {
   const nicknameCount = useMemo(() => `${Math.min(nickname.length, 10)}/10`, [nickname]);
   const idCount = useMemo(() => `${Math.min(userId.length, 20)}/20`, [userId]);
 
-  const [agreeAll, setAgreeAll] = useState(true);
+  const [agreeAll, setAgreeAll] = useState(false);
   const [agreeTerms, setAgreeTerms] = useState(false);
   const [agreePrivacy, setAgreePrivacy] = useState(false);
   const navigate = useNavigate();
@@ -293,6 +293,28 @@ function SignUp() {
     const res = await signUp();
     console.log('signUp: ', res);
     setId(res.id);
+
+    try {
+      const stationRes = await import('../utils/station').then(m => m.getStation());
+      const rows = Array.isArray(stationRes) ? stationRes : (Array.isArray(stationRes?.data) ? stationRes.data : []);
+      const normalized = rows.map((s: any) => ({
+          id: s.id,
+          latitude: s.latitude,
+          longitude: s.longitude,
+          imageUrl: '/6.png',
+          name: `정류장 #${s.id}`,
+          address: s.address,
+          supported_genres: s.supported_genres,
+          capacity: s.capacity,
+          hourly_cost: s.hourly_cost,
+          is_active: s.is_active,
+          current_count: s.current_count,
+      }));
+      sessionStorage.setItem('stations-cache', JSON.stringify(normalized));
+    } catch (e) {
+      console.error('Failed to pre-fetch stations:', e);
+    }
+
     navigate('/main')
   }
 

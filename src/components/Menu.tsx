@@ -19,7 +19,7 @@ function Menu() {
 
     return (
         <Container>
-            <div style={{display: 'flex', flexDirection: 'column', justifyContent: 'center', alignItems: 'center', width: '20%', cursor: 'pointer'}}>
+            <div style={{display: 'flex', flexDirection: 'column', justifyContent: 'center', alignItems: 'center', width: '20%', cursor: 'pointer'}} onClick={() => navigate('/main')}>
                 <LuMapPinned size={27}/>
                 <span style={{fontWeight: 500, fontSize: 12, marginTop: 2}}>지도</span>
             </div>

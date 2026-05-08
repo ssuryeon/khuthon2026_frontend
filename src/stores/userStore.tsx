@@ -5,7 +5,7 @@ type Store = {
     mode: string;
     selected: boolean;
     setMode: (arg0: string) => void;
-    setSelected: () => void;
+    setSelected: (val?: boolean) => void;
 }
 
 export const modeStore = create<Store>()(
@@ -14,7 +14,7 @@ export const modeStore = create<Store>()(
             mode: '',
             selected: false,
             setMode: (newMode) => set({mode: newMode}),
-            setSelected: () => set((state) => ({selected: !state.selected})),
+            setSelected: (val) => set((state) => ({selected: val !== undefined ? val : !state.selected})),
         }),
         {
             name: 'mode-store',
