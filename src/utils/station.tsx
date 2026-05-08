@@ -9,7 +9,7 @@ export const getStation = async () => {
     return res;
 }
 
-export const getCount = async (id:string, genre:string) => {
+export const getCount = async (id:number, genre:string) => {
     console.log('getCount start');
     const res = await (await fetch(`${BASE_URL}/stations/${id}/checkin-count?genre=${genre}`)).json()
     console.log(res);
