@@ -8,7 +8,7 @@ import { GoHome } from "react-icons/go";
 import { Button } from '../components/Button';
 import { modeStore } from '../stores/userStore';
 import { userStore } from '../stores/userStore';
-import {getStation} from '../utils/station';
+// import {getStation} from '../utils/station';
 
 const displays = [
     {
