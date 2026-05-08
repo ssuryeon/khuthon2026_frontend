@@ -1,4 +1,4 @@
-const BASE_URL = 'http://3.34.183.139:8000';
+const BASE_URL = '/api';
 
 export const signUp = async () => {
     console.log('signUp start');
