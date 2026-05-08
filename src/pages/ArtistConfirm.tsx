@@ -4,6 +4,7 @@ import { modeStore } from '../stores/userStore';
 
 type ConfirmPayload = {
   place?: {
+    id?: number;
     imageUrl?: string;
     name?: string;
     address?: string;
