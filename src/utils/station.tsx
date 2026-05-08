@@ -1,4 +1,4 @@
-const BASE_URL = 'http://3.34.183.139:8000';
+const BASE_URL = "https://khuthon2026-frontend.vercel.app/proxy";
 
 export const getStation = async () => {
     console.log('getStation start');
